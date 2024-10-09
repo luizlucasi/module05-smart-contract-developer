@@ -7,7 +7,7 @@ Desafio para os alunos resolverem, façam fork do repositório e envie as soluç
 - Adicionar validações e proteções de segurança (como proteção contra reentrância e controle de mint por endereço).
 
 ### Desafios de Segurança:
-1. **Proteção Contra Reentrância no Reembolso:** A função de reembolso do troco pode ser vulnerável a ataques de reentrância. O aluno deve adicionar a proteção `nonReentrant` da biblioteca OpenZeppelin.
+1. **Proteção Contra Reentrância no Reembolso(Opicional):** A função de reembolso do troco pode ser vulnerável a ataques de reentrância. O aluno deve adicionar a proteção `nonReentrant` da biblioteca OpenZeppelin.
    
 2. **Verificação de Supply Máximo:** Atualmente, o contrato não valida se o total de NFTs (`TOTAL_SUPPLY`) já foi alcançado. O aluno deve adicionar essa verificação na função `mint` para evitar que mais de 10 NFTs sejam emitidos.
 
