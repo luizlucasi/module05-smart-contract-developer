@@ -50,7 +50,7 @@ contract NFtCollection is ERC721, ERC721Burnable, Ownable {
         tokenIds++;
     }
 
-    function mint() external payable checkPrice {
+    function mint() external payable checkPrice, canMint {
         _safeMint(msg.sender);
     }
 
@@ -80,4 +80,12 @@ contract NFtCollection is ERC721, ERC721Burnable, Ownable {
             }
         }
     }
+
+    modifier canMint() {
+    if (tokenIds >= TOTAL_SUPPLY) {
+        emit MaxSupplyLimit(msg.sender);  // Emitir o evento do limite atingido
+        revert("Maximum supply reached");  
+    }
+    _;
+}
 }
