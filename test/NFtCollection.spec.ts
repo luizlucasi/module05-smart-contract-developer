@@ -108,4 +108,24 @@ describe("Contrato NFtCollection", () => {
             expect.fail("O aluno deve implementar este teste")
         });
     });
+
+    describe("Limite de Supply Total", function () {
+        it("Deve reverter se o limite de supply for excedido", async function () {
+            const { nftCollection, ana, john } = await loadFixture(deployNFtCollectionFixture);
+            const price = ethers.parseEther("0.05");
+    
+            // Mintar exatamente o limite de supply (10 NFTs no total)
+            for (let i = 0; i < 5; i++) {
+                await nftCollection.connect(ana).mint({ value: price });
+                await nftCollection.connect(john).mint({ value: price });
+            }
+    
+            // Tentar mintar mais um para  após atingir o limite
+            await expect(nftCollection.connect(john).mint({ value: price }))
+                .to.be.revertedWith("Total de NFTs atingiu o limite");
+        });
+    });
+    
+     
+
 })
