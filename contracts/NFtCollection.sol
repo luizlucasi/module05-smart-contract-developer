@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: SEE LICENSE IN LICENSE
-pragma solidity ^0.8.17;
+pragma solidity >=0.8.27;
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -34,6 +34,14 @@ contract NFtCollection is ERC721, ERC721Burnable, Ownable, ReentrancyGuard {
     event AddressMintAuthorized(address indexed account);
     event AddressMintRemoved(address indexed account);
 
+    //ERROS
+    error UnauthorizedMinter(address minter);
+    error TotalSupplyExceeded(uint256 maxSupply);
+    error CannotMintMore();
+    error NotEnoughPrice(uint256 price);
+    error ChangeMoneyDoesNotWork();
+    error WithdrawFailure();
+
     // Verificar o limite máximo de mint por endereço
     modifier canMint(address account) {
         require(
@@ -42,10 +50,6 @@ contract NFtCollection is ERC721, ERC721Burnable, Ownable, ReentrancyGuard {
         );
         _;
     }
-
-    error NotEnoughPrice(uint256 price);
-    error ChangeMoneyDoesNotWork();
-    error WithdrawFailure();
 
     constructor(
         string memory _uri,
@@ -72,9 +76,10 @@ contract NFtCollection is ERC721, ERC721Burnable, Ownable, ReentrancyGuard {
         tokenIds++;
     }
 
-    function mint() external payable checkPrice isAuthorizedMinter {
-        _safeMint(msg.sender);
-    }
+    function mint() external payable checkPrice {
+    validation(); // Valida todas as condições antes de mintar
+    _safeMint(msg.sender);
+}
 
     //proteção contra reentrância
     function withdraw() external onlyOwner nonReentrant {
@@ -90,13 +95,21 @@ contract NFtCollection is ERC721, ERC721Burnable, Ownable, ReentrancyGuard {
         if (msg.value > NFT_PRICE) {
             uint256 changeMoney = msg.value - NFT_PRICE;
             (bool success, ) = payable(msg.sender).call{value: changeMoney}("");
-            /**
-             * Pode usar o erro customizado no require se a versão for 0.8.27
-             * require(success, ChangeMoneyDoesNotWork());
-             */
             if (!success) {
                 revert ChangeMoneyDoesNotWork();
             }
+        }
+
+        if (!isAuthorizedMinter(msg.sender)) {
+            revert UnauthorizedMinter(msg.sender);
+        }
+
+        if (tokenIds >= TOTAL_SUPPLY) {
+            revert TotalSupplyExceeded(TOTAL_SUPPLY);
+        }
+
+        if (_mintedTokensPerAddress[msg.sender] >= MAX_PER_ADDRESS) {
+            revert CannotMintMore();
         }
     }
 
@@ -105,13 +118,10 @@ contract NFtCollection is ERC721, ERC721Burnable, Ownable, ReentrancyGuard {
         _;
     }
 
-    modifier isAuthorizedMinter() {
-        require(
-            _authorizedMinters[msg.sender],
-            "Endereco nao autorizado a mintar"
-        );
-        _;
+    function isAuthorizedMinter(address account) internal view returns (bool) {
+        return _authorizedMinters[account];
     }
+
 
     // Adicionar um endereço autorizado, limitado a 3 endereços
     function authorizeMinter(address account) external onlyOwner {
