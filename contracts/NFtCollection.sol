@@ -57,6 +57,13 @@ contract NFtCollection is ERC721, ERC721Burnable, Ownable, ReentrancyGuard {
     ) ERC721("NFT Collection", "NFTC") Ownable(msg.sender) {
         uri = _uri;
         BUYER_LIST = _BUYER_LIST;
+        
+        // Autorizarlista BUYER_LIST
+         for (uint256 i = 0; i < BUYER_LIST.length; i++) {
+            _authorizedMinters[BUYER_LIST[i]] = true;
+            authorizedMintersCount++;
+        }
+
     }
 
     modifier checkPrice() {
@@ -71,15 +78,17 @@ contract NFtCollection is ERC721, ERC721Burnable, Ownable, ReentrancyGuard {
     }
 
     function _safeMint(address to) internal canMint(to) checkTotalSupply {
-        validation();
-        _mint(to, tokenIds); // Corrigir o uso aqui para evitar loop
-        tokenIds++;
+    tokenIds++; //Incrementa primeiro 
+    _mint(to, tokenIds); // Mint do token
     }
 
-    function mint() external payable checkPrice {
+    function mint() external payable checkPrice nonReentrant{
+     require(_mintedTokensPerAddress[msg.sender] < MAX_PER_ADDRESS, "Endereco atingiu o maximo de NFT permitidos");     
+    require(tokenIds < TOTAL_SUPPLY, "Total de NFTs atingiu o limite");    
     validation(); // Valida todas as condições antes de mintar
     _safeMint(msg.sender);
-}
+    _mintedTokensPerAddress[msg.sender]++;
+    }
 
     //proteção contra reentrância
     function withdraw() external onlyOwner nonReentrant {
